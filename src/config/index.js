@@ -1,11 +1,18 @@
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import dotenv from "dotenv";
+import { existsSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 加载 .env 文件
+// 加载 .env 文件（优先根目录）
+const envPath = join(__dirname, "..", "..", ".env");
+if (existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
+
+// 备用：从 src 目录加载
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
 export default {

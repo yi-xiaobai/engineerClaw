@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "nodemon src/index.js",
+    "watch": "node --watch src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -13,9 +14,13 @@
   "description": "飞书机器人与 Claude Agent 交互服务",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@larksuiteoapi/node-sdk": "^1.59.0",
     "axios": "^1.13.6",
     "body-parser": "^2.2.2",
     "dotenv": "^17.3.1",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
