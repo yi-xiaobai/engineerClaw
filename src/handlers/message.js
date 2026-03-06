@@ -3,7 +3,7 @@ import { processMessage, clearSession, getSession } from "../services/agent.js";
 import { setWorkspace } from "../services/agent.js";
 
 // 设置工作目录
-const WORKDIR = "/Users/luoyi/Documents";
+const WORKDIR = "/Users/luoyi/Documents/1_project";
 setWorkspace(WORKDIR);
 
 /**
