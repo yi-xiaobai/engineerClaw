@@ -48,6 +48,13 @@ export default {
     defaultProjectPath: getConfig("GITLAB_DEFAULT_PROJECT_PATH"),
   },
 
+  // GitHub 配置
+  github: {
+    token: getConfig("GITHUB_TOKEN"),
+    owner: getConfig("GITHUB_OWNER"),
+    repo: getConfig("GITHUB_REPO"),
+  },
+
   // 项目配置
   projects: {
     basePath: getConfig("PROJECTS_BASE_PATH"),
@@ -60,5 +67,26 @@ export default {
   ide: {
     defaultTool: getConfig("IDE_TOOL", "windsurf"),
     supportedTools: ["windsurf", "cursor"],
+  },
+
+  // MCP 配置
+  mcp: {
+    servers: {
+      github: {
+        enabled: !!getConfig("GITHUB_TOKEN"),
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-github"],
+        env: {
+          GITHUB_PERSONAL_ACCESS_TOKEN: getConfig("GITHUB_TOKEN"),
+        },
+      },
+      // 可以添加更多 MCP Server，例如：
+      // gitlab: {
+      //   enabled: !!getConfig("GITLAB_TOKEN"),
+      //   command: "npx",
+      //   args: ["-y", "@modelcontextprotocol/server-gitlab"],
+      //   env: { GITLAB_PERSONAL_ACCESS_TOKEN: getConfig("GITLAB_TOKEN") },
+      // },
+    },
   },
 };
