@@ -133,7 +133,7 @@ export const TOOLS = [
       properties: {
         name: {
           type: "string",
-          description: "Skill name to load (e.g., 'git-workflow', 'project-management', 'gitlab-mr', 'code-search')",
+          description: "Skill name to load (e.g., 'git-workflow', 'project-management', 'code-search')",
         },
       },
       required: ["name"],

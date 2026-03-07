@@ -21,7 +21,7 @@
 ### 1. 安装依赖
 
 ```bash
-npm install
+yarn install
 ```
 
 ### 2. 配置
@@ -54,10 +54,10 @@ vim ~/feishu-agent.json
 
 ```bash
 # 开发模式（代码改动自动重启）
-npm run dev
+yarn dev
 
 # 生产模式
-npm start
+yarn start
 ```
 
 ## 飞书开放平台配置
@@ -150,6 +150,11 @@ Agent 会:
 #### Skills 系统
 - `load_skill` - 加载专业知识
 
+#### GitHub 工具
+- `create_pull_request` - 创建 PR
+- `list_pull_requests` - 列出 PR
+- `get_pull_request` - 查看 PR 详情
+
 #### 其他
 - `bash` - 执行命令
 
@@ -176,13 +181,7 @@ Skills 系统采用两层加载机制,节省系统提示词 tokens:
    - 代码搜索策略
    - 跨项目操作流程
 
-3. **gitlab-mr** - GitLab MR 创建
-   - MR 创建完整流程
-   - 标题和描述规范
-   - 目标分支选择
-   - 版本号说明
-
-4. **code-search** - 代码搜索最佳实践
+3. **code-search** - 代码搜索最佳实践
    - 搜索策略和技巧
    - 关键词选择
    - 结果分析
@@ -218,7 +217,8 @@ feishu-agent/
 │   │   └── message.js   # 消息处理
 │   ├── services/         # 服务层
 │   │   ├── agent.js     # AI Agent
-│   │   └── feishu.js    # 飞书 SDK
+│   │   ├── feishu.js    # 飞书 SDK
+│   │   └── mcp-client.js # MCP 客户端
 │   ├── tools/            # 工具定义
 │   │   ├── definitions.js  # 工具定义
 │   │   ├── handlers.js     # 工具处理器
@@ -231,8 +231,6 @@ feishu-agent/
 │   │   └── SKILL.md
 │   ├── project-management/
 │   │   └── SKILL.md
-│   ├── gitlab-mr/
-│   │   └── SKILL.md
 │   └── code-search/
 │       └── SKILL.md
 └── package.json
@@ -240,12 +238,17 @@ feishu-agent/
 
 ## 配置说明
 
-### GitLab MCP 配置
+### MCP 配置
 
-本项目使用 GitLab MCP 服务器进行 GitLab 集成。确保你的 Windsurf 已配置 GitLab MCP:
+本项目支持通过 MCP 协议连接外部服务（如 GitHub、GitLab）。在 `~/feishu-agent.json` 中配置：
 
-1. GitLab Token 在 MCP 服务器配置中设置
-2. 支持的操作:创建 MR、推送文件、创建分支等
+```json
+{
+  "GITHUB_TOKEN": "ghp_your_token"
+}
+```
+
+启动时会自动连接配置的 MCP 服务器，获取其提供的所有工具。
 
 ### 项目路径配置
 

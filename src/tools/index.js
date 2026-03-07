@@ -276,4 +276,3 @@ export async function runOpenInIDE(targetPath, ide = null) {
     return `Error: ${error.message}`;
   }
 }
-

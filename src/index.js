@@ -1,6 +1,8 @@
 import Lark from "@larksuiteoapi/node-sdk";
 import { wsClient, getAppAccessToken } from "./services/feishu.js";
 import { handleMessage, handleBotAdded, handleBotRemoved } from "./handlers/message.js";
+import { initMCPServers, mcpManager } from "./services/mcp-client.js";
+import config from "./config/index.js";
 
 /**
  * 启动服务
@@ -15,6 +17,17 @@ async function main() {
   } catch (error) {
     console.error("❌ 飞书应用凭证验证失败:", error.message);
     process.exit(1);
+  }
+
+  // 初始化 MCP Servers
+  try {
+    await initMCPServers(config.mcp);
+    const servers = mcpManager.getConnectedServers();
+    if (servers.length > 0) {
+      console.log(`✅ MCP Servers 已连接: ${servers.join(", ")}`);
+    }
+  } catch (error) {
+    console.error("⚠️ MCP 初始化出错:", error.message);
   }
 
   // 启动 WebSocket 客户端，使用 register 方法注册事件

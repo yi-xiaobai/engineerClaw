@@ -4,6 +4,7 @@ import { TOOLS } from "../tools/definitions.js";
 import { TOOL_HANDLERS } from "../tools/handlers.js";
 import { setWorkDir } from "../tools/index.js";
 import { skillLoader } from "../utils/skills.js";
+import { mcpManager } from "./mcp-client.js";
 
 const { anthropic: anthropicConfig } = config;
 
@@ -23,6 +24,7 @@ const SYSTEM = `你是一个强大的编程助手,可以帮助用户完成完整
 - Git 操作 - 查看状态、创建分支、提交、推送
 - GitLab 集成 - 创建 MR、获取版本信息
 - IDE 集成 - 在 Windsurf 或 Cursor 中打开项目
+- GitHub MCP - 通过 MCP 协议访问 GitHub API（工具名以 mcp_github__ 开头）
 
 专业技能 (使用 load_skill 按需加载):
 ${skillLoader.getDescriptions()}
@@ -32,6 +34,7 @@ ${skillLoader.getDescriptions()}
 - 始终主动完成任务,不要等待用户多次确认
 - 在执行危险操作前要谨慎
 - 提供清晰的执行日志,让用户了解进度
+- MCP 工具（mcp_github__*）提供完整的 GitHub 操作能力
 
 行动而不是解释。`;
 
@@ -86,11 +89,14 @@ export async function agentLoop(messages) {
   const toolLogs = [];
 
   while (true) {
+    // 合并本地工具 + MCP 工具
+    const allTools = [...TOOLS, ...mcpManager.getAllTools()];
+
     const response = await client.messages.create({
       model: anthropicConfig.model,
       system: SYSTEM,
       messages: messages,
-      tools: TOOLS,
+      tools: allTools,
       max_tokens: 8000,
     });
 
@@ -107,10 +113,17 @@ export async function agentLoop(messages) {
     const results = [];
     for (const block of response.content) {
       if (block.type === "tool_use") {
-        const handler = TOOL_HANDLERS[block.name];
-        const output = handler
-          ? await handler(block.input)
-          : `Unknown tool: ${block.name}`;
+        let output;
+
+        // 判断是 MCP 工具还是本地工具
+        if (mcpManager.isMCPTool(block.name)) {
+          output = await mcpManager.callTool(block.name, block.input);
+        } else {
+          const handler = TOOL_HANDLERS[block.name];
+          output = handler
+            ? await handler(block.input)
+            : `Unknown tool: ${block.name}`;
+        }
 
         toolLogs.push(`$ ${block.name}: ${output.slice(0, 100)}...`);
 
