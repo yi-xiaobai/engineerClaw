@@ -1,8 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import os from "os";
 
-// 读取 ~/feishu-agent.json
-const globalConfigPath = os.homedir() + "/feishu-agent.json";
+const globalConfigPath = os.homedir() + "/engineer-claw.json";
 let globalConfig = {};
 
 if (existsSync(globalConfigPath)) {
