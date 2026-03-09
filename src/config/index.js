@@ -42,12 +42,6 @@ export default {
     port: parseInt(getConfig("PORT", "3000"), 10),
   },
 
-  // GitLab 配置
-  gitlab: {
-    defaultTargetBranch: getConfig("GITLAB_DEFAULT_TARGET", "dev"),
-    defaultProjectPath: getConfig("GITLAB_DEFAULT_PROJECT_PATH"),
-  },
-
   // GitHub 配置
   github: {
     token: getConfig("GITHUB_TOKEN"),
@@ -81,12 +75,15 @@ export default {
         },
       },
       // 可以添加更多 MCP Server，例如：
-      // gitlab: {
-      //   enabled: !!getConfig("GITLAB_TOKEN"),
-      //   command: "npx",
-      //   args: ["-y", "@modelcontextprotocol/server-gitlab"],
-      //   env: { GITLAB_PERSONAL_ACCESS_TOKEN: getConfig("GITLAB_TOKEN") },
-      // },
+      gitlab: {
+        enabled: !!getConfig("GITLAB_TOKEN"),
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-gitlab"],
+        env: { 
+          GITLAB_PERSONAL_ACCESS_TOKEN: getConfig("GITLAB_TOKEN"),
+          GITLAB_HOST: getConfig("GITLAB_HOST"),
+        },
+      },
     },
   },
 };
