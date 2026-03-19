@@ -1,28 +1,14 @@
-# 飞书 Agent 服务
+# Engineer Claw 🦀
 
-通过飞书机器人与 Claude/MiniMax Agent 交互。
+自动化开发助手 - 通过 AI Agent 协调完成开发任务。
 
-## 功能特性
+## 核心功能
 
-- **WebSocket 长连接**：无需公网回调，通过飞书长连接模式接收消息
-- **AI 集成**：支持 Claude/MiniMax 模型，理解自然语言并执行操作
-- **文件操作**：读取、写入、编辑文件
-- **Shell 命令**：在workspace中执行终端命令
-- **项目管理**：扫描并切换项目，多项目代码搜索
-- **IDE 集成**：一键在 Windsurf/Cursor 中打开文件或项目
-- **Skills 系统**：按需加载专业知识（Git工作流、项目管理、代码搜索等）
-
-## 支持的工具
-
-| 工具 | 功能 |
-|------|------|
-| `bash` | 执行 Shell 命令 |
-| `read_file` / `write_file` / `edit_file` | 文件读写编辑 |
-| `find_file` | 按文件名搜索文件 |
-| `find_projects` / `open_project` | 项目扫描与切换 |
-| `search_code` / `search_all_projects` | 单项目/全项目代码搜索 |
-| `open_in_ide` | 在 Windsurf/Cursor 中打开 |
-| `load_skill` | 加载专业知识库 |
+- **PRD 解析** - 读取需求文档，提取关键信息和验证步骤
+- **代码修改** - 根据需求自动修改代码
+- **E2E 验证** - 启动项目，使用 Playwright 自动化验证
+- **Git 提交** - 自动创建分支、提交、推送
+- **飞书通知** - 任务完成后发送 Webhook 通知
 
 ## 快速开始
 
@@ -30,91 +16,100 @@
 
 ```bash
 yarn install
+npx playwright install chromium
 ```
 
 ### 2. 配置
 
-创建 `~/feishu-agent.json`：
+创建 `~/engineer-claw.json`：
 
 ```json
 {
-  "APP_ID": "飞书AppID",
-  "APP_SECRET": "飞书AppSecret",
-  "VERIFICATION_TOKEN": "验证Token",
-  "ENCRYPT_KEY": "加密Key",
-  "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
-  "ANTHROPIC_API_KEY": "APIKey",
-  "MODEL_ID": "MiniMax-M2.5-highspeed",
-  "PROJECTS_BASE_PATH": "/path/to/projects"
+  "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
+  "ANTHROPIC_API_KEY": "your-api-key",
+  "MODEL_ID": "claude-sonnet-4-20250514",
+  
+  "PROJECT_PATH": "/path/to/your/project",
+  "START_CMD": "pnpm run serve",
+  "DEV_URL": "http://localhost:8080",
+  "GIT_REMOTE": "origin",
+  "FEISHU_WEBHOOK": "",
+  "NOTIFY_USER": "",
+  "MAX_RETRIES": 3
 }
 ```
 
-### 3. 启动
+**配置说明：**
+- `ANTHROPIC_*` - Claude API 配置（必填）
+- `PROJECT_PATH` - 默认项目路径
+- `START_CMD` - 项目启动命令
+- `DEV_URL` - 开发服务器地址
+- `FEISHU_WEBHOOK` - 飞书通知 Webhook
+- `MAX_RETRIES` - E2E 验证失败重试次数
+
+### 3. 使用
 
 ```bash
-yarn dev
+# 交互式创建任务
+node src/cli.js
+
+# 使用配置文件
+node src/cli.js --task ./task-example.json
+
+# 直接指定需求
+node src/cli.js --prd "修复登录页验证码不刷新的问题" --name "修复验证码"
+
+# 查看任务状态
+node src/cli.js --status task_xxx
+
+# 列出所有任务
+node src/cli.js --list
 ```
 
-## 飞书配置
-
-1. 在[飞书开放平台](https://open.feishu.cn/)创建企业自建应用
-2. 添加权限：`im:message:send_as_bot`、`im:message:receive_v1`
-3. 事件订阅：添加 `im.message.receive_v1`，选择「长连接」模式
-4. 发布应用
-
-## 使用示例
-
-与 Agent 对话即可完成各种开发任务：
-
-```
-用户: 列出当前所有项目
-Agent: [扫描 projects 目录，返回项目列表]
-
-用户: 切换到 master-web 项目
-Agent: [切换工作目录到 master-web]
-
-用户: 搜索 "userService" 相关的代码
-Agent: [在当前项目中搜索，返回匹配结果]
-
-用户: 在 Windsurf 中打开 src/index.js
-Agent: [调用 open_in_ide 工具打开文件]
-```
-
-## MCP 配置
-
-支持通过 MCP 协议连接 GitHub、GitLab 等外部服务。配置 `~/feishu-agent.json`：
+## 任务配置
 
 ```json
 {
-  "GITHUB_TOKEN": "ghp_xxx"
+  "name": "修复登录页 Bug",
+  "prd": "登录页验证码点击后不刷新",
+  "projectPath": "/path/to/project",
+  "startCmd": "pnpm run serve",
+  "devUrl": "http://localhost:8080",
+  "branch": "fix/captcha-refresh",
+  "feishuWebhook": "https://open.feishu.cn/xxx",
+  "notifyUser": "luoyi"
 }
 ```
 
-启动时自动连接 MCP Server，获取其提供的工具（创建 PR、搜索代码等）。
+## 执行流程
+
+```
+PRD 解析 → 代码修改 → E2E 验证 → (失败重试 x3) → Git 提交 → 飞书通知
+```
 
 ## 项目结构
 
 ```
-feishu-agent/
+engineer-claw/
 ├── src/
-│   ├── index.js              # 服务入口
+│   ├── cli.js                # 命令行入口
 │   ├── config/index.js       # 配置管理
-│   ├── handlers/
-│   │   └── message.js       # 消息处理
-│   ├── services/
-│   │   ├── agent.js         # AI Agent
-│   │   ├── feishu.js        # 飞书 SDK
-│   │   └── mcp-client.js    # MCP 客户端
-│   ├── tools/
-│   │   ├── definitions.js   # 工具定义
-│   │   ├── handlers.js      # 工具处理
-│   │   └── index.js         # 工具实现
-│   └── utils/
-│       ├── project.js       # 项目搜索
-│       └── skills.js        # Skills 加载
-├── skills/                   # 专业知识库
-│   ├── git-workflow/
-│   ├── project-management/
-│   └── code-search/
+│   ├── lib/tools.js          # 通用工具函数
+│   └── orchestrator/         # 自动化协调器
+│       ├── index.js          # 主协调器
+│       ├── task-manager.js   # 任务状态管理
+│       └── agents/           # 子 Agent
+│           ├── prd-agent.js  # PRD 解析
+│           ├── code-agent.js # 代码修改
+│           ├── e2e-agent.js  # E2E 验证
+│           └── git-agent.js  # Git 操作
+├── .tasks/                   # 任务状态持久化
+├── task-example.json         # 示例配置
 └── package.json
 ```
+
+## 依赖
+
+- `@anthropic-ai/sdk` - Claude API
+- `playwright` - E2E 自动化测试
+- `axios` - HTTP 请求

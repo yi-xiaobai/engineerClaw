@@ -1,28 +1,20 @@
 {
   "name": "engineer-claw",
   "version": "1.0.0",
-  "main": "src/index.js",
+  "main": "src/cli.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "watch": "node --watch src/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "start": "node src/cli.js",
+    "cli": "node src/cli.js",
+    "task": "node src/cli.js --task"
   },
-  "keywords": [],
+  "keywords": ["agent", "automation", "playwright", "claude"],
   "author": "",
   "license": "ISC",
-  "description": "飞书机器人与 Claude Agent 交互服务",
+  "description": "自动化开发助手 - 通过 AI Agent 协调完成开发任务",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
-    "@larksuiteoapi/node-sdk": "^1.59.0",
-    "@modelcontextprotocol/sdk": "^1.27.1",
     "axios": "^1.13.6",
-    "dotenv": "^17.2.3"
-  },
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.14"
+    "playwright": "^1.52.0"
   }
 }
