@@ -108,17 +108,21 @@ async function interactiveInput() {
 
   const config = { ...DEFAULT_CONFIG };
 
-  // 必填项
-  config.prd = await question('📝 需求描述 (或 PRD 链接，输入 exit 退出): ');
-  if (!config.prd || config.prd.toLowerCase() === 'exit') {
-    if (config.prd?.toLowerCase() === 'exit') {
+  // 必填项 - 循环直到用户输入有效内容或 exit
+  while (true) {
+    config.prd = (await question('📝 需求描述 (或 PRD 链接，输入 exit 退出): ')).trim();
+    
+    if (config.prd.toLowerCase() === 'exit') {
       console.log('👋 再见！');
-    } else {
-      // 提示用户输入需求描述
-      console.log('❌ 需求描述不能为空');
+      rl.close();
+      return null;
     }
-    rl.close();
-    return null;
+    
+    if (config.prd) {
+      break; // 有效输入，继续
+    }
+    
+    console.log('⚠️  需求描述不能为空，请重新输入');
   }
 
   config.name = await question('📌 任务名称 (可选): ') || '自动化任务';
