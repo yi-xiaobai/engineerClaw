@@ -14,14 +14,10 @@ import { readFileSync, existsSync } from 'fs';
 import * as readline from 'readline';
 import config from './config/index.js';
 
-// 从配置文件获取默认值
+// 默认配置（只保留飞书通知，其他由 Agent 自动识别）
 const DEFAULT_CONFIG = {
-  projectPath: config.task.projectPath,
-  startCmd: config.task.startCmd,
-  devUrl: config.task.devUrl,
-  gitRemote: config.task.gitRemote,
-  feishuWebhook: config.task.feishuWebhook,
-  notifyUser: config.task.notifyUser
+  feishuWebhook: config.feishu.webhook,
+  notifyUser: config.feishu.notifyUser
 };
 
 /**
@@ -90,11 +86,7 @@ function showHelp() {
   "name": "任务名称",
   "prd": "需求描述或链接",
   "projectPath": "/path/to/project",
-  "startCmd": "pnpm run serve",
-  "devUrl": "http://localhost:8080",
-  "branch": "fix/xxx",
-  "feishuWebhook": "https://...",
-  "notifyUser": "luoyi"
+  "branch": "fix/xxx"  // 可选，其他配置由 Agent 自动识别
 }
 `);
 }
@@ -127,9 +119,12 @@ async function interactiveInput() {
   config.name = await question('📌 任务名称 (可选): ') || '自动化任务';
 
   // 可选项
-  const projectHint = DEFAULT_CONFIG.projectPath || '请输入项目路径';
-  const customProject = await question(`📁 项目路径 [${projectHint}]: `);
-  if (customProject) config.projectPath = customProject;
+  config.projectPath = await question('📁 项目路径: ');
+  if (!config.projectPath) {
+    console.log('❌ 项目路径不能为空');
+    rl.close();
+    return null;
+  }
 
   const customBranch = await question('🌿 分支名 (可选，留空自动生成): ');
   if (customBranch) config.branch = customBranch;

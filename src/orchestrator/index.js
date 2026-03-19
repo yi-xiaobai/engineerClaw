@@ -119,11 +119,10 @@ export async function runOrchestrator(taskConfig) {
     console.log('\n🧪 阶段 3: E2E 验证...');
     taskManager.updateStatus(task.id, TaskStatus.E2E_TESTING, '正在启动项目并验证');
 
+    // startCmd 和 devUrl 由 E2E Agent 自动从项目中识别
     let e2eResult = await runE2eAgent(
       prdResult,
       task.projectPath,
-      task.startCmd,
-      task.devUrl,
       task.id
     );
     taskManager.updateResult(task.id, 'e2eResult', e2eResult);
@@ -154,8 +153,6 @@ export async function runOrchestrator(taskConfig) {
       e2eResult = await runE2eAgent(
         prdResult,
         task.projectPath,
-        task.startCmd,
-        task.devUrl,
         task.id
       );
       taskManager.updateResult(task.id, 'e2eResult', e2eResult);

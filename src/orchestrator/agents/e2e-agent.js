@@ -20,12 +20,21 @@ const client = new Anthropic({
   apiKey: anthropicConfig.apiKey,
 });
 
-const SYSTEM = `你是一个 E2E 测试专家，使用 Playwright 进行自动化测试。你的任务是：
-1. 根据验证步骤生成 Playwright 测试脚本
-2. 执行测试并截图
-3. 验证问题是否已解决
+const SYSTEM = `你是一个 E2E 测试专家，使用 Playwright 进行自动化测试。
 
-Playwright 脚本模板：
+## 你的能力
+1. 读取项目的 package.json 来识别启动命令（dev/serve/start）和包管理器
+2. 读取项目配置文件（vite.config/vue.config/.env）来识别开发服务器 URL
+3. 根据验证步骤生成 Playwright 测试脚本
+4. 执行测试并截图
+5. 验证问题是否已解决
+
+## 常见的本地域名
+- local.mastergo.com
+- localhost
+- 127.0.0.1
+
+## Playwright 脚本模板
 \`\`\`javascript
 import { chromium } from 'playwright';
 
@@ -125,6 +134,28 @@ function stopDevServer(proc) {
 function createTools(projectPath, taskId) {
   return [
     {
+      name: "read_file",
+      description: "读取项目文件，用于识别项目配置（package.json, vite.config.js 等）",
+      input_schema: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "相对于项目根目录的文件路径" }
+        },
+        required: ["path"]
+      }
+    },
+    {
+      name: "bash",
+      description: "执行 shell 命令，用于启动项目或检查状态",
+      input_schema: {
+        type: "object",
+        properties: {
+          command: { type: "string", description: "要执行的命令" }
+        },
+        required: ["command"]
+      }
+    },
+    {
       name: "run_playwright_test",
       description: "执行 Playwright 测试脚本",
       input_schema: {
@@ -154,10 +185,32 @@ function createTools(projectPath, taskId) {
 /**
  * 创建工具处理器
  */
-function createToolHandlers(projectPath, taskId, devUrl) {
+function createToolHandlers(projectPath, taskId) {
   const screenshotsDir = taskManager.getScreenshotsDir();
 
   return {
+    read_file: async ({ path: filePath }) => {
+      try {
+        const fullPath = path.join(projectPath, filePath);
+        const content = await fs.readFile(fullPath, 'utf-8');
+        return content.slice(0, 10000);
+      } catch (e) {
+        return `Error: ${e.message}`;
+      }
+    },
+
+    bash: async ({ command }) => {
+      try {
+        const { stdout, stderr } = await execAsync(command, {
+          cwd: projectPath,
+          timeout: 30000
+        });
+        return (stdout + stderr).slice(0, 5000) || '(no output)';
+      } catch (e) {
+        return `Error: ${e.message}`;
+      }
+    },
+
     run_playwright_test: async ({ script, screenshot_name }) => {
       try {
         // 创建临时测试文件
@@ -246,35 +299,27 @@ try {
  * 运行 E2E Agent
  * @param {object} prdResult - PRD 解析结果（包含验证步骤）
  * @param {string} projectPath - 项目路径
- * @param {string} startCmd - 启动命令
- * @param {string} devUrl - 开发服务器 URL
  * @param {string} taskId - 任务 ID
  * @returns {Promise<{passed: boolean, message: string}>}
  */
-export async function runE2eAgent(prdResult, projectPath, startCmd, devUrl, taskId) {
+export async function runE2eAgent(prdResult, projectPath, taskId) {
   let devServer = null;
+  let devUrl = null;
 
-  try {
-    // 启动开发服务器
-    console.log(`  [e2e-agent] Starting dev server: ${startCmd}`);
-    devServer = await startDevServer(projectPath, startCmd);
+  const tools = createTools(projectPath, taskId);
+  const handlers = createToolHandlers(projectPath, taskId);
 
-    // 等待服务就绪
-    console.log(`  [e2e-agent] Waiting for server at ${devUrl}...`);
-    await waitForServer(devUrl);
-    console.log(`  [e2e-agent] Server ready`);
+  const verifyStepsText = prdResult.verifySteps?.map((step, i) => 
+    `${i + 1}. ${step.description}\n   操作: ${step.action}\n   断言: ${step.assertion}`
+  ).join('\n') || '无具体验证步骤，请根据需求描述自行设计验证方案';
 
-    const tools = createTools(projectPath, taskId);
-    const handlers = createToolHandlers(projectPath, taskId, devUrl);
+  const messages = [
+    {
+      role: "user",
+      content: `请验证以下问题是否已解决：
 
-    const verifyStepsText = prdResult.verifySteps?.map((step, i) => 
-      `${i + 1}. ${step.description}\n   操作: ${step.action}\n   断言: ${step.assertion}`
-    ).join('\n') || '无具体验证步骤，请根据需求描述自行设计验证方案';
-
-    const messages = [
-      {
-        role: "user",
-        content: `请验证以下问题是否已解决：
+## 项目路径
+${projectPath}
 
 ## 问题描述
 ${prdResult.problem}
@@ -285,74 +330,68 @@ ${prdResult.expected}
 ## 验证步骤
 ${verifyStepsText}
 
-## 开发服务器
-URL: ${devUrl}
+## 你需要做的
+1. 先读取 package.json 识别启动命令和包管理器
+2. 读取配置文件（如 vite.config.js）识别开发服务器 URL
+3. 启动项目并等待服务就绪
+4. 生成并执行 Playwright 测试脚本
+5. 截图并返回结果`
+    }
+  ];
 
-请生成并执行 Playwright 测试脚本来验证问题是否已解决。记得截图。`
-      }
-    ];
+  // Agent 循环
+  for (let i = 0; i < 15; i++) {
+    const response = await client.messages.create({
+      model: anthropicConfig.model,
+      system: SYSTEM,
+      messages,
+      tools,
+      max_tokens: 4000
+    });
 
-    // Agent 循环
-    for (let i = 0; i < 10; i++) {
-      const response = await client.messages.create({
-        model: anthropicConfig.model,
-        system: SYSTEM,
-        messages,
-        tools,
-        max_tokens: 4000
-      });
+    messages.push({ role: "assistant", content: response.content });
 
-      messages.push({ role: "assistant", content: response.content });
+    if (response.stop_reason !== "tool_use") {
+      // 解析最终结果
+      const textBlocks = response.content.filter(b => b.type === "text");
+      const text = textBlocks.map(b => b.text).join("\n");
 
-      if (response.stop_reason !== "tool_use") {
-        // 解析最终结果
-        const textBlocks = response.content.filter(b => b.type === "text");
-        const text = textBlocks.map(b => b.text).join("\n");
+      const passed = text.includes('TEST_PASSED') || text.includes('通过') || text.includes('成功');
+      
+      return {
+        passed,
+        message: text
+      };
+    }
 
-        const passed = text.includes('TEST_PASSED') || text.includes('通过') || text.includes('成功');
-        
-        return {
-          passed,
-          message: text
-        };
-      }
-
-      // 执行工具调用
-      const results = [];
-      for (const block of response.content) {
-        if (block.type === "tool_use") {
-          const handler = handlers[block.name];
-          let output;
-          try {
-            output = handler ? await handler(block.input) : `Unknown tool: ${block.name}`;
-          } catch (e) {
-            output = `Error: ${e.message}`;
-          }
-
-          console.log(`  [e2e-agent] ${block.name}: ${String(output).slice(0, 100)}...`);
-
-          results.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: String(output)
-          });
+    // 执行工具调用
+    const results = [];
+    for (const block of response.content) {
+      if (block.type === "tool_use") {
+        const handler = handlers[block.name];
+        let output;
+        try {
+          output = handler ? await handler(block.input) : `Unknown tool: ${block.name}`;
+        } catch (e) {
+          output = `Error: ${e.message}`;
         }
+
+        console.log(`  [e2e-agent] ${block.name}: ${String(output).slice(0, 100)}...`);
+
+        results.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: String(output)
+        });
       }
-      messages.push({ role: "user", content: results });
     }
-
-    return {
-      passed: false,
-      message: "E2E Agent reached iteration limit"
-    };
-
-  } finally {
-    // 停止开发服务器
-    if (devServer) {
-      console.log(`  [e2e-agent] Stopping dev server`);
-      stopDevServer(devServer);
-    }
+    messages.push({ role: "user", content: results });
   }
+
+  return {
+    passed: false,
+    message: "E2E Agent reached iteration limit"
+  };
 }
 
 export default { runE2eAgent };

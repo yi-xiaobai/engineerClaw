@@ -1,10 +1,6 @@
 {
   "name": "修复登录页验证码刷新问题",
   "prd": "用户反馈：登录页面的验证码图片点击后不会刷新，需要手动刷新整个页面才能获取新验证码。期望行为：点击验证码图片后，应该自动请求新的验证码并更新显示。",
-  "projectPath": "/Users/luoyi/Documents/1_project/2_master_web/master-web",
-  "startCmd": "pnpm run serve",
-  "devUrl": "http://localhost:8080",
-  "branch": "fix/captcha-refresh",
-  "feishuWebhook": "",
-  "notifyUser": "luoyi"
+  "projectPath": "",
+  "branch": "fix/captcha-refresh"
 }

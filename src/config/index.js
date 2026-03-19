@@ -1,7 +1,8 @@
 /**
  * config/index.js - 配置管理
  * 
- * 从 ~/engineer-claw.json 加载配置
+ * 只保留必要的全局配置（API Key 等）
+ * startCmd / devUrl / gitRemote 等项目相关配置由 Agent 运行时自己识别
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -24,21 +25,24 @@ function getConfig(key, defaultValue) {
 }
 
 export default {
-  // Anthropic 配置
+  // Anthropic 配置（必须手动配置）
   anthropic: {
     baseURL: getConfig("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
     apiKey: getConfig("ANTHROPIC_API_KEY"),
     model: getConfig("MODEL_ID", "claude-sonnet-4-20250514"),
   },
 
-  // 任务默认配置
-  task: {
-    projectPath: getConfig("PROJECT_PATH", ""),
-    startCmd: getConfig("START_CMD", "pnpm run serve"),
-    devUrl: getConfig("DEV_URL", "http://localhost:8080"),
-    gitRemote: getConfig("GIT_REMOTE", "origin"),
-    feishuWebhook: getConfig("FEISHU_WEBHOOK", ""),
+  // 飞书配置（可选）
+  feishu: {
+    webhook: getConfig("FEISHU_WEBHOOK", ""),
     notifyUser: getConfig("NOTIFY_USER", ""),
+  },
+
+  // Git 配置（可选，Agent 也能自己识别）
+  git: {
+    gitlabToken: getConfig("GITLAB_TOKEN", ""),
+    gitlabHost: getConfig("GITLAB_HOST", ""),
+    githubToken: getConfig("GITHUB_TOKEN", ""),
   },
 
   // 重试配置

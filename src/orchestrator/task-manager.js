@@ -8,8 +8,6 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import config from '../config/index.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -76,13 +74,11 @@ class TaskManager {
       id: taskId,
       name: taskConfig.name || '未命名任务',
       prd: taskConfig.prd || '',
-      projectPath: taskConfig.projectPath || config.task.projectPath,
-      startCmd: taskConfig.startCmd || config.task.startCmd,
-      devUrl: taskConfig.devUrl || config.task.devUrl,
-      gitRemote: taskConfig.gitRemote || config.task.gitRemote,
+      projectPath: taskConfig.projectPath || '',
       branch: taskConfig.branch || '',
-      feishuWebhook: taskConfig.feishuWebhook || config.task.feishuWebhook,
-      notifyUser: taskConfig.notifyUser || config.task.notifyUser,
+      feishuWebhook: taskConfig.feishuWebhook || '',
+      notifyUser: taskConfig.notifyUser || '',
+      // startCmd, devUrl, gitRemote 由 Agent 运行时自动识别，不再作为配置
       
       // 状态信息
       status: TaskStatus.PENDING,
